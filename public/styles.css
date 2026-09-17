@@ -853,3 +853,12 @@ html {
   align-items: center;
   justify-content: space-between;
 }
+/* ============================================================
+   BUY BUTTONS
+   ============================================================ */
+.s-buy{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:28px}
+.s-buy-note{font-size:13px;color:var(--sky-3)}
+@media(max-width:640px){.s-buy{flex-direction:column;align-items:flex-start;gap:10px}}
+
+.cta-buy-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+@media(max-width:680px){.cta-buy-row{flex-direction:column}}

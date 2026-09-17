@@ -11,7 +11,7 @@
 
 window.STRATEGIES = {
   "india-emergent-industries": {
-    name: "India Emergent Industries",
+    name: "India Emergent Industries",`r`n    smallcaseUrl: "https://smlc.se/ScIYx",
     tagline: "The next layer of India's growth.",
     question: "What is India building next?",
     inception: "2026-09-17",
@@ -96,7 +96,7 @@ window.STRATEGIES = {
   },
 
   "india-execution-engine": {
-    name: "India Execution Engine",
+    name: "India Execution Engine",`r`n    smallcaseUrl: "https://smlc.se/xBASN",
     tagline: "Build it. Power it. Defend it. Bank it.",
     question: "Who is actually delivering it?",
     inception: "2026-09-17",

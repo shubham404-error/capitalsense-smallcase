@@ -23,20 +23,25 @@
      worse than a loud one.
      ---------------------------------------------------------- */
   function validate() {
+    var errs = [];
     Object.keys(S).forEach(function (id) {
       var s = S[id];
       var total = all(s).reduce(function (n, h) { return n + h.wt; }, 0) + s.cash;
-      if (total !== 100) console.error('[data] ' + s.name + ' weights sum to ' + total + ', expected 100');
+      if (total !== 100) errs.push('[data] ' + s.name + ' weights sum to ' + total + ', expected 100');
       s.themes.forEach(function (t) {
         var sum = t.holdings.reduce(function (n, h) { return n + h.wt; }, 0);
-        if (sum !== t.weight) console.error('[data] ' + s.name + ' / ' + t.label + ' sums to ' + sum + ', stated ' + t.weight);
+        if (sum !== t.weight) errs.push('[data] ' + s.name + ' / ' + t.label + ' sums to ' + sum + ', stated ' + t.weight);
         t.holdings.forEach(function (h) {
           if (!h.role || !h.thesis || !h.risk || !h.watch || h.watch.length < 3) {
-            console.error('[data] incomplete holding card: ' + h.name);
+            errs.push('[data] incomplete holding card: ' + h.name);
           }
         });
       });
     });
+    if (errs.length > 0) {
+      document.body.innerHTML = '<div style="padding:40px;color:red;font-family:sans-serif;"><h1>Data Integrity Error</h1><pre>' + errs.join('\n') + '</pre><p>Initialization halted.</p></div>';
+      throw new Error("Validation failed: " + errs.join(', '));
+    }
   }
 
   /* ----------------------------------------------------------
@@ -124,6 +129,10 @@
         '<div class="s-stat"><span>Themes</span><strong>' + s.themes.length + '</strong></div>' +
         (s.cash ? '<div class="s-stat"><span>Cash</span><strong>' + s.cash + '%</strong></div>' : '') +
         '<div class="s-stat"><span>Inception</span><strong>17 Sep 2026</strong></div>' +
+      '</div>' +
+      '<div class="s-buy">' +
+        '<a class="btn btn-brass" href="' + esc(s.smallcaseUrl) + '" target="_blank" rel="noopener noreferrer" data-buy="' + id + '">Invest in ' + esc(s.name) + '</a>' +
+        '<span class="s-buy-note">Opens smallcase in a new tab to complete your investment.</span>' +
       '</div>';
 
     /* chapter sub-nav */
@@ -181,7 +190,9 @@
     }
   }
 
+  var currentPerfReqId = 0;
   async function renderPerformance() {
+    var reqId = ++currentPerfReqId;
     var activeTabBtn = document.querySelector('.segmented button[aria-selected="true"]');
     var strategyId = activeTabBtn ? activeTabBtn.id.replace('tab-', '') : 'india-emergent-industries';
     var s = S[strategyId];
@@ -193,6 +204,7 @@
 
     try {
       var inceptionData = await PriceAdapter.inceptionPrices();
+      if (reqId !== currentPerfReqId) return;
 
       if (inceptionData.status !== 'locked') {
         $('perfModule').innerHTML = '<div class="perf"><div class="perf-head"><span class="dot"></span>' +
@@ -204,6 +216,7 @@
       }
 
       var data = await PriceAdapter.currentQuotes(tickers);
+      if (reqId !== currentPerfReqId) return;
       var quotes = data.quotes;
       
       var strategyTotalReturn = 0;
@@ -589,6 +602,17 @@
 
   /* ---------------------------------------------------------- */
   validate();
+
+  function renderCtaBuy() {
+    var el = $('ctaBuyRow');
+    if (!el) return;
+    el.innerHTML = Object.keys(S).map(function (id) {
+      var s = S[id];
+      return '<a class="btn btn-brass" href="' + esc(s.smallcaseUrl) + '" target="_blank" rel="noopener noreferrer" data-buy="' + id + '-cta">Buy ' + esc(s.name) + '</a>';
+    }).join('');
+  }
+
+  renderCtaBuy();
   renderCompare();
   renderLists();
   renderPerformance();
