@@ -274,6 +274,7 @@ p{margin:0 0 16px}
 .segmented button + button{border-left:1px solid var(--line-d2)}
 .segmented button:hover{color:var(--sky);background:rgba(255,255,255,.05)}
 .segmented button[aria-selected="true"]{background:var(--brass);color:#fff}
+@media(max-width:600px){.segmented{display:flex;flex-direction:column;width:100%}.segmented button{width:100%;text-align:left}.segmented button + button{border-left:0;border-top:1px solid var(--line-d2)}}
 
 .s-tagline{font-family:var(--display);font-size:clamp(28px,3.9vw,44px);line-height:1.12;letter-spacing:-.018em;color:var(--sky);margin:0 0 20px;max-width:18ch}
 .s-opener{font-size:16.5px;line-height:1.66;color:var(--sky-2);max-width:62ch;margin:0}
