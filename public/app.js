@@ -60,7 +60,7 @@
       });
     },
     inceptionPrices: function () {
-      return fetch('/api/inception', { headers: { Accept: 'application/json' } })
+      return fetch('/api/inception?t=' + Date.now(), { headers: { Accept: 'application/json' } })
         .then(function (r) {
           if (!r.ok) throw new Error('inception prices unavailable');
           return r.json();
