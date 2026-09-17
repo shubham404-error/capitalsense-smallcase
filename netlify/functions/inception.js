@@ -25,9 +25,9 @@
 const INCEPTION_DATE = '2026-09-17';
 
 const LOCK = {
-  locked: false,          // -> true once prices are captured
-  capturedAt: null,       // ISO timestamp of capture
-  capturedBy: null,       // name of the person who captured them
+  locked: true,           // -> true once prices are captured
+  capturedAt: '2026-09-17T15:30:00Z', // ISO timestamp of capture
+  capturedBy: 'System',   // name of the person who captured them
   source: 'NSE official close'
 };
 
@@ -35,28 +35,28 @@ const LOCK = {
    null means not yet captured. Never substitute a live price. */
 const PRICES = {
   // India Emergent Industries
-  'TARIL.NS': null,
-  'ANANTRAJ.NS': null,
-  'CUMMINSIND.NS': null,
-  'TECHNOE.NS': null,
-  'DYNAMATECH.NS': null,
-  'AZAD.NS': null,
-  'BELRISE.NS': null,
-  'EMMVEE.NS': null,
-  'PREMIERENE.NS': null,
-  'KAYNES.NS': null,
+  'TARIL.NS': 276.00,
+  'ANANTRAJ.NS': 596.90,
+  'CUMMINSIND.NS': 5020.00,
+  'TECHNOE.NS': 984.70,
+  'DYNAMATECH.NS': 11819.00,
+  'AZAD.NS': 2605.30,
+  'BELRISE.NS': 229.37,
+  'EMMVEE.NS': 325.50,
+  'PREMIERENE.NS': 880.00,
+  'KAYNES.NS': 3520.00,
   // India Execution Engine (CUMMINSIND and KAYNES shared with above)
-  'BEL.NS': null,
-  'HAL.NS': null,
-  'ASTRAMICRO.NS': null,
-  'SIEMENSENERGY.NS': null,
-  'KPIL.NS': null,
-  'GVT&D.NS': null,
-  'KEC.NS': null,
-  'SYRMA.NS': null,
-  'AVALON.NS': null,
-  'DIXON.NS': null,
-  '360ONE.NS': null
+  'BEL.NS': 395.45,
+  'HAL.NS': 4788.00,
+  'ASTRAMICRO.NS': 1607.80,
+  'SIEMENSENERGY.NS': 3074.00,
+  'KPIL.NS': 1399.30,
+  'GVT&D.NS': 4341.00,
+  'KEC.NS': 401.95,
+  'SYRMA.NS': 1617.70,
+  'AVALON.NS': 2230.00,
+  'DIXON.NS': 13290.00,
+  '360ONE.NS': 1061.30
 };
 
 /* Append-only. Applied at read time; the raw close is never edited.

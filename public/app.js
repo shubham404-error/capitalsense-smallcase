@@ -192,21 +192,39 @@
     $('perfModule').innerHTML = '<div class="perf"><div class="perf-head"><span class="dot"></span><strong>Loading...</strong></div><div class="perf-body"><p class="perf-note">Fetching live data from Yahoo Finance...</p></div></div>';
 
     try {
+      var inceptionData = await PriceAdapter.inceptionPrices();
+
+      if (inceptionData.status !== 'locked') {
+        $('perfModule').innerHTML = '<div class="perf"><div class="perf-head"><span class="dot"></span>' +
+          '<strong>Tracking has not started yet</strong></div><div class="perf-body">' +
+          '<p class="perf-note">Performance tracking begins at the close on ' + INCEPTION_LABEL +
+          '. Until inception prices are captured and locked, no entry price, current price or return is shown. ' +
+          'We would rather show nothing than show a number we cannot stand behind.</p></div></div>';
+        return;
+      }
+
       var data = await PriceAdapter.currentQuotes(tickers);
       var quotes = data.quotes;
       
       var liveRows = hs.map(function (h) {
         var q = quotes[h.ticker];
-        if (q) {
-          // Assume entry is 100 for now if inception prices are missing. In a real app we'd fetch inceptionPrices too.
-          var changeText = q.change !== null ? q.change.toFixed(2) + '%' : 'N/A';
-          var changeCls = q.change !== null && q.change >= 0 ? 'text-green' : (q.change !== null ? 'text-red' : '');
-          var changeSign = q.change !== null && q.change > 0 ? '+' : '';
+        var inception = inceptionData.prices[h.ticker];
+        
+        if (q && inception && inception.captured) {
+          var entry = inception.adjustedClose;
+          var overallReturn = ((q.price - entry) / entry) * 100;
+          
+          var changeText = overallReturn.toFixed(2) + '%';
+          var changeCls = overallReturn >= 0 ? 'text-green' : 'text-red';
+          var changeSign = overallReturn > 0 ? '+' : '';
+          
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small" title="Yahoo Finance Ticker: ' + esc(h.ticker) + '">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
-            '%</td><td class="n na">—</td><td class="n">' + q.currency + ' ' + q.price.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
+            '%</td><td class="n">' + q.currency + ' ' + entry.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n">' + q.currency + ' ' + q.price.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
         } else {
+          var entryText = (inception && inception.captured) ? 'INR ' + inception.adjustedClose.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '—';
+          var entryCls = entryText === '—' ? 'n na' : 'n';
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
-            '%</td><td class="n na">—</td><td class="n na">N/A</td><td class="n na">—</td></tr>';
+            '%</td><td class="' + entryCls + '">' + entryText + '</td><td class="n na">N/A</td><td class="n na">—</td></tr>';
         }
       }).join('');
 
