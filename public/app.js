@@ -98,7 +98,7 @@
       var len = (g.weight / 100) * C;
       var el = '<circle r="' + R + '" cx="70" cy="70" fill="none" stroke="' + PALETTE[i % PALETTE.length] +
         '" stroke-width="18" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) +
-        '" stroke-dashoffset="' + (-off).toFixed(2) + '" transform="rotate(-90 70 70)"></circle>';
+        '" stroke-dashoffset="' + (C - off).toFixed(2) + '" transform="rotate(-90 70 70)"></circle>';
       off += len;
       return el;
     }).join('');
@@ -225,14 +225,15 @@
           if (overallReturn > topGainer.return) { topGainer = { name: h.name, return: overallReturn }; }
           if (overallReturn < topLoser.return) { topLoser = { name: h.name, return: overallReturn }; }
           
-          var changeText = overallReturn.toFixed(2) + '%';
-          var changeCls = overallReturn >= 0 ? 'text-green' : 'text-red';
-          var changeSign = overallReturn > 0 ? '+' : '';
+          var roundedReturn = Math.round(overallReturn);
+          var changeText = roundedReturn + '%';
+          var changeCls = roundedReturn >= 0 ? 'text-green' : 'text-red';
+          var changeSign = roundedReturn > 0 ? '+' : '';
           
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small" title="Yahoo Finance Ticker: ' + esc(h.ticker) + '">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
-            '%</td><td class="n">' + q.currency + ' ' + entry.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n">' + q.currency + ' ' + q.price.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
+            '%</td><td class="n">₹' + Math.round(entry).toLocaleString('en-IN') + '</td><td class="n">₹' + Math.round(q.price).toLocaleString('en-IN') + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
         } else {
-          var entryText = (inception && inception.captured) ? 'INR ' + inception.adjustedClose.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '—';
+          var entryText = (inception && inception.captured) ? '₹' + Math.round(inception.adjustedClose).toLocaleString('en-IN') : '—';
           var entryCls = entryText === '—' ? 'n na' : 'n';
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
             '%</td><td class="' + entryCls + '">' + entryText + '</td><td class="n na">N/A</td><td class="n na">—</td></tr>';
@@ -256,14 +257,26 @@
       var sidebarEl = $('perfSidebar');
       if (sidebarEl) {
         if (validCount > 0) {
-          var fmtVal = function(v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
-          var clsVal = function(v) { return v >= 0 ? 'text-green' : 'text-red'; };
+          var fmtVal = function(v) { var rv = Math.round(v); return (rv > 0 ? '+' : '') + rv + '%'; };
+          var clsVal = function(v) { return Math.round(v) >= 0 ? 'text-green' : 'text-red'; };
           
           var sidebarHtml = 
             '<div class="perf-widget">' +
               '<h3>Capital Growth Simulator</h3>' +
               '<div class="sim-val" id="simValue">₹1,00,000</div>' +
               '<div class="sim-label">Current value of your investment</div>' +
+              '<div class="sim-graph-container">' +
+                '<svg viewBox="0 0 100 40" preserveAspectRatio="none">' +
+                  '<defs>' +
+                    '<linearGradient id="simGrad" x1="0" y1="0" x2="0" y2="1">' +
+                      '<stop offset="0%" stop-color="var(--brass)" stop-opacity="0.3" />' +
+                      '<stop offset="100%" stop-color="var(--brass)" stop-opacity="0.0" />' +
+                    '</linearGradient>' +
+                  '</defs>' +
+                  '<path id="simPath" fill="url(#simGrad)" d="M0,40 L0,30 Q50,30 100,10 L100,40 Z"></path>' +
+                  '<path id="simLine" fill="none" stroke="var(--brass)" stroke-width="2" d="M0,30 Q50,30 100,10"></path>' +
+                '</svg>' +
+              '</div>' +
               '<div class="sim-slider-container">' +
                 '<label><span>Investment</span><span id="simInvDisp">₹1,00,000</span></label>' +
                 '<input type="range" id="simSlider" min="10000" max="1000000" step="10000" value="100000" oninput="updateSim(' + strategyTotalReturn + ', this.value)">' +
@@ -284,7 +297,19 @@
             var invested = parseInt(val, 10);
             var current = invested * (1 + (ret / 100));
             document.getElementById('simInvDisp').innerText = '₹' + invested.toLocaleString('en-IN');
-            document.getElementById('simValue').innerText = '₹' + current.toLocaleString('en-IN', {maximumFractionDigits: 0});
+            document.getElementById('simValue').innerText = '₹' + Math.round(current).toLocaleString('en-IN');
+            
+            var scale = 0.3 + (0.7 * (invested / 1000000));
+            var h0, h1;
+            if (ret >= 0) {
+              h0 = 40 - (10 * scale);
+              h1 = 40 - (38 * scale);
+            } else {
+              h0 = 40 - (30 * scale);
+              h1 = 40 - (10 * scale);
+            }
+            document.getElementById('simPath').setAttribute('d', 'M0,40 L0,' + h0 + ' C30,' + h0 + ' 70,' + h1 + ' 100,' + h1 + ' L100,40 Z');
+            document.getElementById('simLine').setAttribute('d', 'M0,' + h0 + ' C30,' + h0 + ' 70,' + h1 + ' 100,' + h1);
           };
           window.updateSim(strategyTotalReturn, 100000);
         } else {
