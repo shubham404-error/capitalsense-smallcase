@@ -860,5 +860,6 @@ html {
 .s-buy-note{font-size:13px;color:var(--sky-3)}
 @media(max-width:640px){.s-buy{flex-direction:column;align-items:flex-start;gap:10px}}
 
-.cta-buy-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:24px}
-@media(max-width:680px){.cta-buy-row{flex-direction:column}}
+.cta-buy-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px}
+.cta-buy-row .btn{justify-content:center}
+@media(max-width:680px){.cta-buy-row{grid-template-columns:1fr}}
