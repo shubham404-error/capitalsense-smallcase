@@ -451,7 +451,14 @@
      CHATBOT
      ---------------------------------------------------------- */
   function initChatbot() {
+    var ENABLE_CHATBOT = false; // Kill switch for compliance
+    if (!ENABLE_CHATBOT) {
+      var tb = $('chatToggle'); if (tb) tb.style.display = 'none';
+      var cw = $('chatWindow'); if (cw) cw.style.display = 'none';
+      return;
+    }
     var toggleBtn = $('chatToggle');
+    if (toggleBtn) toggleBtn.style.display = 'flex';
     var chatWindow = $('chatWindow');
     var minBtn = $('chatMinimize');
     var clearBtn = $('chatClear');
@@ -529,6 +536,7 @@
 
         var aiText = data.response || 'Sorry, no response.';
         var htmlContent = typeof marked !== 'undefined' ? marked.parse(aiText) : esc(aiText);
+          if (typeof DOMPurify !== 'undefined') htmlContent = DOMPurify.sanitize(htmlContent);
         appendMessage('ai', htmlContent, true);
       } catch (err) {
         var tEl = document.getElementById(typingId);

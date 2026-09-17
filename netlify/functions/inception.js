@@ -26,7 +26,7 @@ const INCEPTION_DATE = '2026-09-17';
 
 const LOCK = {
   locked: true,           // -> true once prices are captured
-  capturedAt: '2026-09-17T15:30:00Z', // ISO timestamp of capture
+  capturedAt: '2026-09-17T10:00:00Z', // ISO timestamp of capture
   capturedBy: 'System',   // name of the person who captured them
   source: 'NSE official close'
 };
