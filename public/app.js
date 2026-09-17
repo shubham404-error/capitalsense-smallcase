@@ -521,6 +521,39 @@
     });
   }
 
+  /* ----------------------------------------------------------
+     SCROLL ANIMATIONS
+     ---------------------------------------------------------- */
+  function initScrollAnimations() {
+    var elements = document.querySelectorAll('section > .wrap, .hero-in, .overlap-tool, .perf-widget');
+    for (var i = 0; i < elements.length; i++) {
+      elements[i].classList.add('reveal');
+    }
+
+    if ('IntersectionObserver' in window) {
+      var revealObserver = new IntersectionObserver(function(entries, observer) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1
+      });
+
+      for (var j = 0; j < elements.length; j++) {
+        revealObserver.observe(elements[j]);
+      }
+    } else {
+      for (var k = 0; k < elements.length; k++) {
+        elements[k].classList.add('active');
+      }
+    }
+  }
+
   /* ---------------------------------------------------------- */
   validate();
   renderCompare();
@@ -529,6 +562,7 @@
   renderOverlap();
   initNav();
   initChatbot();
+  initScrollAnimations();
   selectStrategy('india-emergent-industries', false);
 
   window.CapitalSense = { PriceAdapter: PriceAdapter, selectStrategy: selectStrategy };

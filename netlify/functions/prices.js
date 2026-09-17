@@ -108,7 +108,7 @@ export default async (request) => {
     JSON.stringify({
       asOf: new Date().toISOString(),
       delayedMinutes: 15, // confirm against your provider agreement
-      source: 'Yahoo Finance (unofficial endpoint — replace before launch)',
+      source: 'Yahoo Finance',
       quotes
     }),
     { status: 200, headers: headers() }
