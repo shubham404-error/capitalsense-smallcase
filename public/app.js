@@ -206,6 +206,11 @@
       var data = await PriceAdapter.currentQuotes(tickers);
       var quotes = data.quotes;
       
+      var strategyTotalReturn = 0;
+      var topGainer = { name: '', return: -Infinity };
+      var topLoser = { name: '', return: Infinity };
+      var validCount = 0;
+
       var liveRows = hs.map(function (h) {
         var q = quotes[h.ticker];
         var inception = inceptionData.prices[h.ticker];
@@ -213,6 +218,12 @@
         if (q && inception && inception.captured) {
           var entry = inception.adjustedClose;
           var overallReturn = ((q.price - entry) / entry) * 100;
+          
+          strategyTotalReturn += (overallReturn * (h.wt / 100));
+          validCount++;
+
+          if (overallReturn > topGainer.return) { topGainer = { name: h.name, return: overallReturn }; }
+          if (overallReturn < topLoser.return) { topLoser = { name: h.name, return: overallReturn }; }
           
           var changeText = overallReturn.toFixed(2) + '%';
           var changeCls = overallReturn >= 0 ? 'text-green' : 'text-red';
@@ -240,6 +251,46 @@
         '</div></div>';
       
       $('perfModule').innerHTML = live;
+
+      // Render Sidebar
+      var sidebarEl = $('perfSidebar');
+      if (sidebarEl) {
+        if (validCount > 0) {
+          var fmtVal = function(v) { return (v > 0 ? '+' : '') + v.toFixed(2) + '%'; };
+          var clsVal = function(v) { return v >= 0 ? 'text-green' : 'text-red'; };
+          
+          var sidebarHtml = 
+            '<div class="perf-widget">' +
+              '<h3>Capital Growth Simulator</h3>' +
+              '<div class="sim-val" id="simValue">₹1,00,000</div>' +
+              '<div class="sim-label">Current value of your investment</div>' +
+              '<div class="sim-slider-container">' +
+                '<label><span>Investment</span><span id="simInvDisp">₹1,00,000</span></label>' +
+                '<input type="range" id="simSlider" min="10000" max="1000000" step="10000" value="100000" oninput="updateSim(' + strategyTotalReturn + ', this.value)">' +
+              '</div>' +
+            '</div>' +
+            '<div class="perf-widget">' +
+              '<h3>Key Metrics</h3>' +
+              '<div class="metric-row"><span class="metric-lbl">Strategy Return</span><span class="metric-val"><strong class="' + clsVal(strategyTotalReturn) + '">' + fmtVal(strategyTotalReturn) + '</strong></span></div>' +
+              '<div class="metric-row"><span class="metric-lbl">Top Gainer</span><span class="metric-val">' + esc(topGainer.name) + '<span class="sub ' + clsVal(topGainer.return) + '">' + fmtVal(topGainer.return) + '</span></span></div>' +
+              '<div class="metric-row"><span class="metric-lbl">Top Loser</span><span class="metric-val">' + esc(topLoser.name) + '<span class="sub ' + clsVal(topLoser.return) + '">' + fmtVal(topLoser.return) + '</span></span></div>' +
+            '</div>';
+            
+          sidebarEl.innerHTML = sidebarHtml;
+          sidebarEl.style.display = 'flex';
+          
+          // Expose a global function for the slider to use
+          window.updateSim = function(ret, val) {
+            var invested = parseInt(val, 10);
+            var current = invested * (1 + (ret / 100));
+            document.getElementById('simInvDisp').innerText = '₹' + invested.toLocaleString('en-IN');
+            document.getElementById('simValue').innerText = '₹' + current.toLocaleString('en-IN', {maximumFractionDigits: 0});
+          };
+          window.updateSim(strategyTotalReturn, 100000);
+        } else {
+          sidebarEl.style.display = 'none';
+        }
+      }
     } catch (e) {
       var down =
         '<p class="state-label">Feed failure state</p>' +

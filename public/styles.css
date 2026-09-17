@@ -690,3 +690,113 @@ footer{background:var(--navy-900);color:var(--sky-3);padding:clamp(48px,6vw,72px
 }
 . t e x t - g r e e n   {   c o l o r :   v a r ( - - u p ) ;   }   . t e x t - r e d   {   c o l o r :   v a r ( - - d o w n ) ;   }   . h - s y m - s m a l l   {   f o n t - s i z e :   0 . 8 5 e m ;   c o l o r :   v a r ( - - s k y - 2 ) ;   }  
  
+/* ============================================================
+   PERFORMANCE LAYOUT & SIDEBAR
+   ============================================================ */
+.perf-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 40px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .perf-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.perf-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.perf-widget {
+  background: var(--navy-800);
+  border: 1px solid var(--line-d2);
+  border-radius: 6px;
+  padding: 24px;
+  color: var(--sky);
+}
+
+.perf-widget h3 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--sky-3);
+  margin: 0 0 16px 0;
+  border-bottom: 1px solid var(--line-d2);
+  padding-bottom: 12px;
+}
+
+.sim-val {
+  font-family: var(--display);
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 6px;
+  color: var(--white);
+}
+
+.sim-label {
+  font-size: 14px;
+  color: var(--sky-2);
+  margin-bottom: 20px;
+}
+
+.sim-slider-container {
+  margin-bottom: 16px;
+}
+.sim-slider-container label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--sky-2);
+  margin-bottom: 8px;
+}
+.sim-slider-container input[type=range] {
+  width: 100%;
+  -webkit-appearance: none;
+  background: var(--navy-900);
+  height: 6px;
+  border-radius: 3px;
+  outline: none;
+}
+.sim-slider-container input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--brass);
+  cursor: pointer;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-d2);
+}
+.metric-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.metric-lbl {
+  font-size: 14px;
+  color: var(--sky-2);
+}
+.metric-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--white);
+  text-align: right;
+}
+.metric-val .sub {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--sky-3);
+  margin-top: 2px;
+}
+
