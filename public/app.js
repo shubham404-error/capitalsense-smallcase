@@ -1,5 +1,5 @@
 /* ============================================================
-   CapitalSense Advisors — application
+   CapitalSense Advisors \u2014 application
    No dependencies. No build step.
    ============================================================ */
 (function () {
@@ -112,7 +112,7 @@
      ---------------------------------------------------------- */
   function renderStrategy(id) {
     var s = S[id], hs = all(s);
-    var segs = s.themes.map(function (t) { return { label: t.label, weight: t.weight }; });
+    var segs = s.themes.map(function (t, i) { return { label: t.label, weight: t.weight }; });
     if (s.cash) segs.push({ label: 'Cash', weight: s.cash });
 
     /* intro band */
@@ -129,14 +129,14 @@
     /* chapter sub-nav */
     $('chapterNav').innerHTML = '<div class="chapter-nav-in">' +
       '<a href="#alloc-' + id + '">Allocation</a>' +
-      s.themes.map(function (t) {
-        return '<a href="#ch-' + t.id + '">' + esc(t.label) + '<b>' + t.weight + '%</b></a>';
+      s.themes.map(function (t, i) {
+        return '<a href="#ch-' + t.id + '"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;background:' + PALETTE[i % PALETTE.length] + '"></span>' + esc(t.label) + '<b>' + t.weight + '%</b></a>';
       }).join('') + '</div>';
 
     /* body */
     var chapters = s.themes.map(function (t, i) {
       return '<div class="chapter" id="ch-' + t.id + '">' +
-        '<div class="ch-meta"><span class="ch-num">Chapter ' + (i + 1) + ' — ' + esc(t.label) +
+        '<div class="ch-meta"><span class="ch-num">Chapter ' + (i + 1) + ' \u2014 ' + esc(t.label) +
           '</span><span class="ch-wt">' + t.weight + '% of the portfolio</span></div>' +
         '<h3 class="ch-title">' + esc(t.title) + '</h3>' +
         '<p class="ch-body">' + esc(t.body) + '</p>' +
@@ -156,7 +156,7 @@
     $('strategyPanel').innerHTML =
       '<div class="alloc" id="alloc-' + id + '">' + donut(segs) +
         '<div class="bars">' + segs.map(function (g, i) {
-          return '<div class="bar-row"><div><div class="bar-lbl">' + esc(g.label) + '</div>' +
+          return '<div class="bar-row"><div><div class="bar-lbl"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:10px;vertical-align:middle;background:' + PALETTE[i % PALETTE.length] + '"></span>' + esc(g.label) + '</div>' +
             '<div class="bar-track"><div class="bar-fill" style="width:' + g.weight +
             '%;background:' + PALETTE[i % PALETTE.length] + '"></div></div></div>' +
             '<div class="bar-val">' + g.weight + '%</div></div>';
@@ -231,12 +231,12 @@
           var changeSign = roundedReturn > 0 ? '+' : '';
           
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small" title="Yahoo Finance Ticker: ' + esc(h.ticker) + '">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
-            '%</td><td class="n">₹' + Math.round(entry).toLocaleString('en-IN') + '</td><td class="n">₹' + Math.round(q.price).toLocaleString('en-IN') + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
+            '%</td><td class="n">\u20B9' + Math.round(entry).toLocaleString('en-IN') + '</td><td class="n">\u20B9' + Math.round(q.price).toLocaleString('en-IN') + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
         } else {
-          var entryText = (inception && inception.captured) ? '₹' + Math.round(inception.adjustedClose).toLocaleString('en-IN') : '—';
-          var entryCls = entryText === '—' ? 'n na' : 'n';
+          var entryText = (inception && inception.captured) ? '\u20B9' + Math.round(inception.adjustedClose).toLocaleString('en-IN') : '\u2014';
+          var entryCls = entryText === '\u2014' ? 'n na' : 'n';
           return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
-            '%</td><td class="' + entryCls + '">' + entryText + '</td><td class="n na">N/A</td><td class="n na">—</td></tr>';
+            '%</td><td class="' + entryCls + '">' + entryText + '</td><td class="n na">N/A</td><td class="n na">\u2014</td></tr>';
         }
       }).join('');
 
@@ -263,7 +263,7 @@
           var sidebarHtml = 
             '<div class="perf-widget">' +
               '<h3>Capital Growth Simulator</h3>' +
-              '<div class="sim-val" id="simValue">₹1,00,000</div>' +
+              '<div class="sim-val" id="simValue">\u20B91,00,000</div>' +
               '<div class="sim-label">Current value of your investment</div>' +
               '<div class="sim-graph-container">' +
                 '<svg viewBox="0 0 100 40" preserveAspectRatio="none">' +
@@ -278,7 +278,7 @@
                 '</svg>' +
               '</div>' +
               '<div class="sim-slider-container">' +
-                '<label><span>Investment</span><span id="simInvDisp">₹1,00,000</span></label>' +
+                '<label><span>Investment</span><span id="simInvDisp">\u20B91,00,000</span></label>' +
                 '<input type="range" id="simSlider" min="10000" max="1000000" step="10000" value="100000" oninput="updateSim(' + strategyTotalReturn + ', this.value)">' +
               '</div>' +
             '</div>' +
@@ -296,8 +296,8 @@
           window.updateSim = function(ret, val) {
             var invested = parseInt(val, 10);
             var current = invested * (1 + (ret / 100));
-            document.getElementById('simInvDisp').innerText = '₹' + invested.toLocaleString('en-IN');
-            document.getElementById('simValue').innerText = '₹' + Math.round(current).toLocaleString('en-IN');
+            document.getElementById('simInvDisp').innerText = '\u20B9' + invested.toLocaleString('en-IN');
+            document.getElementById('simValue').innerText = '\u20B9' + Math.round(current).toLocaleString('en-IN');
             
             var scale = 0.3 + (0.7 * (invested / 1000000));
             var h0, h1;
