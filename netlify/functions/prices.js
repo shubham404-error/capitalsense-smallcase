@@ -1,53 +1,64 @@
-﻿/* ============================================================
+/* ============================================================
    GET /api/prices?symbols=TARIL.NS,KAYNES.NS
+
+   Replaces the Express /api/finance/:ticker route.
+
+   Contract:
+     200 -> { asOf, delayedMinutes, source, quotes: { SYM: { price, change, currency } } }
+     503 -> { error }  when the upstream feed cannot be reached
+
+   Hard rule: this function never invents a number. If a symbol
+   fails, it is simply absent from `quotes` and the front end
+   renders the unavailable state for that row. There is no
+   fallback price, no simulated tick, and no substituting the
+   inception price for a missing current price.
    ============================================================ */
 
-const UPSTREAM = 'https://query1.finance.yahoo.com/v7/finance/spark';
+const UPSTREAM = 'https://query1.finance.yahoo.com/v8/finance/chart/';
 const MAX_SYMBOLS = 40;
 const TIMEOUT_MS = 6000;
 
 function headers() {
   return {
     'Content-Type': 'application/json',
+    // Short cache: prices move, but this protects the upstream
+    // from a refresh-button loop and keeps Netlify usage sane.
     'Cache-Control': 'public, max-age=60, stale-while-revalidate=120'
   };
 }
 
-async function fetchPrices(symbols) {
+async function fetchOne(symbol) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
   try {
     const res = await fetch(
-      \\?symbols=\&range=1d&interval=1d\,
+      `${UPSTREAM}${encodeURIComponent(symbol)}?interval=1d&range=1d`,
       {
         signal: ctrl.signal,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+          // Yahoo rejects requests without a browser-like UA.
+          'User-Agent': 'Mozilla/5.0 (compatible; CapitalSense/1.0)',
           Accept: 'application/json'
         }
       }
     );
     if (!res.ok) return null;
     const json = await res.json();
-    if (!json?.spark?.result) return null;
+    const meta = json?.chart?.result?.[0]?.meta;
+    if (!meta || typeof meta.regularMarketPrice !== 'number') return null;
 
-    const quotes = {};
-    for (const item of json.spark.result) {
-      const meta = item?.response?.[0]?.meta;
-      if (meta && typeof meta.regularMarketPrice === 'number') {
-        const prev = meta.chartPreviousClose ?? meta.previousClose;
-        const change = typeof prev === 'number' && prev > 0
-          ? ((meta.regularMarketPrice - prev) / prev) * 100
-          : null;
+    const prev = meta.chartPreviousClose ?? meta.previousClose;
+    const change =
+      typeof prev === 'number' && prev > 0
+        ? ((meta.regularMarketPrice - prev) / prev) * 100
+        : null; // null, never a guess
 
-        quotes[item.symbol] = {
-          price: meta.regularMarketPrice,
-          change: change === null ? null : Number(change.toFixed(2)),
-          currency: meta.currency || 'INR'
-        };
-      }
-    }
-    return quotes;
+    return {
+      symbol,
+      price: meta.regularMarketPrice,
+      change: change === null ? null : Number(change.toFixed(2)),
+      currency: meta.currency || 'INR'
+    };
   } catch {
     return null;
   } finally {
@@ -79,23 +90,25 @@ export default async (request) => {
     });
   }
 
-  const quotes = await fetchPrices(symbols) || {};
+  const settled = await Promise.all(symbols.map(fetchOne));
+  const quotes = {};
+  for (const q of settled) {
+    if (q) quotes[q.symbol] = { price: q.price, change: q.change, currency: q.currency };
+  }
 
+  // Every symbol failed: treat as a feed outage, not an empty result.
   if (Object.keys(quotes).length === 0) {
     return new Response(
       JSON.stringify({ error: 'market data provider unreachable' }),
       { status: 503, headers: headers() }
     );
   }
-  
-  const now = new Date();
 
   return new Response(
     JSON.stringify({
-      quoteTimestamp: Math.floor(now.getTime() / 1000),
-      marketDate: now.toISOString().split('T')[0],
-      delayedMinutes: 15,
-      source: 'CapitalSense Production Data Engine',
+      asOf: new Date().toISOString(),
+      delayedMinutes: 15, // confirm against your provider agreement
+      source: 'Yahoo Finance (unofficial endpoint — replace before launch)',
       quotes
     }),
     { status: 200, headers: headers() }

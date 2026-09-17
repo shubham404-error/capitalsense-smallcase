@@ -12,7 +12,7 @@
    not a product feature.
    ============================================================ */
 
-const MODEL = 'gemini-3.5-flash';
+const MODEL = 'gemini-2.0-flash';
 const MAX_PROMPT = 800;
 
 const SYSTEM_RULES = `
@@ -64,14 +64,13 @@ export default async (request) => {
   }
 
   const prompt = typeof body?.prompt === 'string' ? body.prompt.trim() : '';
-  const context = typeof body?.context === 'string' ? body.context : '';
+  const context = typeof body?.context === 'string' ? body.context.trim() : '';
   if (!prompt) return json({ error: 'prompt required' }, 400);
   if (prompt.length > MAX_PROMPT) {
     return json({ error: 'prompt too long' }, 413);
   }
-
-  const finalSystemRules = SYSTEM_RULES + '\n\nAnswer only from the supplied CapitalSense research context. If the information isn\'t present, say so.';
-  const userMessage = `Context: ${context}\n\nUser Question: ${prompt}`;
+  
+  const finalPrompt = context ? `Context: ${context}\n\nUser Question: ${prompt}` : prompt;
 
   try {
     const res = await fetch(
@@ -80,9 +79,9 @@ export default async (request) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: finalSystemRules }] },
-          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-          generationConfig: { temperature: 0.1, maxOutputTokens: 700 }
+          systemInstruction: { parts: [{ text: SYSTEM_RULES }] },
+          contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+          generationConfig: { temperature: 0.3, maxOutputTokens: 700 }
         })
       }
     );

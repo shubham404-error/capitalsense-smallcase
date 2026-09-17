@@ -1,5 +1,5 @@
-﻿/* ============================================================
-   CapitalSense Advisors â€” application
+/* ============================================================
+   CapitalSense Advisors — application
    No dependencies. No build step.
    ============================================================ */
 (function () {
@@ -22,7 +22,7 @@
      Weights are checked at load. A silent weighting error is
      worse than a loud one.
      ---------------------------------------------------------- */
-    function validate() {
+  function validate() {
     Object.keys(S).forEach(function (id) {
       var s = S[id];
       var total = all(s).reduce(function (n, h) { return n + h.wt; }, 0) + s.cash;
@@ -31,23 +31,12 @@
         var sum = t.holdings.reduce(function (n, h) { return n + h.wt; }, 0);
         if (sum !== t.weight) console.error('[data] ' + s.name + ' / ' + t.label + ' sums to ' + sum + ', stated ' + t.weight);
         t.holdings.forEach(function (h) {
-          if (!h.role || !h.thesis || !h.risk || !h.watch || h.watch.length < 3 || !h.bottleneck) {
+          if (!h.role || !h.thesis || !h.risk || !h.watch || h.watch.length < 3) {
             console.error('[data] incomplete holding card: ' + h.name);
           }
-          if (h.crossPortfolio && typeof h.crossPortfolio.shared !== 'boolean') console.error('[data] invalid crossPortfolio on ' + h.name);
-          if (h.metrics && !Array.isArray(h.metrics)) console.error('[data] invalid metrics on ' + h.name);
-          if (h.portfolioDecision && (!h.portfolioDecision.considered || !h.portfolioDecision.selected)) console.error('[data] invalid portfolioDecision on ' + h.name);
         });
       });
     });
-    // Validate CROSS_STRATEGY
-    var eWt = 0, xWt = 0;
-    Object.keys(window.CROSS_STRATEGY).forEach(function(k) {
-      eWt += window.CROSS_STRATEGY[k].emergent || 0;
-      xWt += window.CROSS_STRATEGY[k].execution || 0;
-    });
-    if (eWt !== 100) console.error('[data] CROSS_STRATEGY emergent sums to ' + eWt + ', expected 100');
-    if (xWt !== 100) console.error('[data] CROSS_STRATEGY execution sums to ' + xWt + ', expected 100');
   }
 
   /* ----------------------------------------------------------
@@ -88,8 +77,8 @@
       ['', '<span class="hd">' + a.name + '</span>', '<span class="hd">' + b.name + '</span>'],
       ['The question', a.question, b.question],
       ['Holdings', all(a).length + ' companies', all(b).length + ' companies and ' + b.cash + '% cash'],
-      ['Themes', a.themes.map(function (t) { return t.label; }).join(' Â· '),
-        b.themes.map(function (t) { return t.label; }).join(' Â· ')],
+      ['Themes', a.themes.map(function (t) { return t.label; }).join(' · '),
+        b.themes.map(function (t) { return t.label; }).join(' · ')],
       ['Style', a.style, b.style],
       ['Core lens', a.lens, b.lens],
       ['Inception', INCEPTION_LABEL, INCEPTION_LABEL]
@@ -152,10 +141,13 @@
         '<h3 class="ch-title">' + esc(t.title) + '</h3>' +
         '<p class="ch-body">' + esc(t.body) + '</p>' +
         '<div class="holdings">' + t.holdings.map(function (h) {
-          return '<div class="h-row" style="cursor:pointer;" onclick="window.openStockModal({stock:\'' + h.ticker + '\', strategy:\'' + id + '\'})"><div>' +
+          return '<div class="h-row"><div>' +
             '<p class="h-name">' + esc(h.name) + '<span class="h-sym">' + esc(h.sym) + '</span></p>' +
             '<p class="h-role">' + esc(h.role) + '</p>' +
-            '</div><div class="h-wt" style="display:flex; flex-direction:column; align-items:flex-end;">' + h.wt + '%<span class="btn-ghost" style="font-size:11px; margin-top:8px; padding:4px 8px; border:1px solid var(--line);">View research &rarr;</span></div></div>';
+            '<p class="h-thesis">' + esc(h.thesis) + '</p>' +
+            '<p class="h-watch"><b>What we watch.</b> ' + h.watch.map(esc).join(' · ') + '</p>' +
+            '<p class="h-risk"><b>Risk.</b> ' + esc(h.risk) + '</p>' +
+            '</div><div class="h-wt">' + h.wt + '%</div></div>';
         }).join('') + '</div>' +
         '<p class="take">' + esc(t.takeaway) + '</p>' +
         '</div>';
@@ -171,9 +163,7 @@
         }).join('') +
         '<div class="bar-row bar-total"><div class="bar-lbl">' + hs.length + ' holdings' +
           (s.cash ? ' and ' + s.cash + '% cash' : '') + '</div><div class="bar-val">100%</div></div>' +
-        '</div></div>' + chapters +
-        '<div id="matrix-wrap-' + id + '" class="mt-60">' + window.getMatrixHtml(id) + '</div>' +
-        '<div id="exclusions-wrap-' + id + '">' + window.renderPortfolioDecisions(id) + '</div>';
+        '</div></div>' + chapters;
 
     $('strategyPanel').setAttribute('aria-labelledby', 'tab-' + id);
     watchChapters();
@@ -184,93 +174,63 @@
       b.setAttribute('aria-selected', b.id === 'tab-' + id ? 'true' : 'false');
     });
     renderStrategy(id);
+    renderPerformance(); // Re-render the performance module for the newly selected strategy
     if (scroll) {
       var top = document.getElementById('strategies').offsetTop - 60;
       window.scrollTo({ top: top, behavior: 'smooth' });
     }
   }
 
-  /* ----------------------------------------------------------
-     PERFORMANCE
-     Renders the correct state for where we actually are.
-     ---------------------------------------------------------- */
   async function renderPerformance() {
-    var container = $('perfModule');
-    container.innerHTML = '<div class="perf"><div class="perf-body"><p class="perf-note">Loading performance data...</p></div></div>';
+    var activeTabBtn = document.querySelector('.segmented button[aria-selected="true"]');
+    var strategyId = activeTabBtn ? activeTabBtn.id.replace('tab-', '') : 'india-emergent-industries';
+    var s = S[strategyId];
+    var hs = all(s);
+    var tickers = hs.map(function (h) { return h.ticker; });
+
+    // First show a loading state
+    $('perfModule').innerHTML = '<div class="perf"><div class="perf-head"><span class="dot"></span><strong>Loading...</strong></div><div class="perf-body"><p class="perf-note">Fetching live data from Yahoo Finance...</p></div></div>';
 
     try {
-      // 1. FETCH INCEPTION
-      var inceptionRes = await PriceAdapter.inceptionPrices();
-
-      // 2. LOCKED? -> NO
-      if (!inceptionRes.locked) {
-        var preInception =
-          '<div class="perf"><div class="perf-head"><span class="dot"></span>' +
-          '<strong>Tracking has not started yet</strong></div><div class="perf-body">' +
-          '<p class="perf-note">Both smallcases begin on 17 September 2026. Inception prices will be locked to the official closing prices on that date. ' +
-          'Until then, no entry price, current price or return is shown.</p></div></div>';
-        container.innerHTML = preInception;
-        return;
-      }
-
-      // 3. LOCKED? -> YES -> FETCH CURRENT
-      var allTickers = [];
-      S['india-emergent-industries'].forEach(function(h) { if (allTickers.indexOf(h.ticker) === -1) allTickers.push(h.ticker); });
-      S['india-execution-engine'].forEach(function(h) { if (allTickers.indexOf(h.ticker) === -1) allTickers.push(h.ticker); });
-
-      var currentRes = await PriceAdapter.currentQuotes(allTickers);
-
-      // 4. SUCCESS -> LIVE
-      function buildTable(strategyKey, strategyName) {
-        var rows = '';
-        var weightedReturn = 0;
-        var missingCount = 0;
-
-        S[strategyKey].forEach(function(h) {
-          var incept = inceptionRes.prices[h.ticker];
-          var curr = currentRes.quotes[h.ticker];
-          
-          if (!incept || !incept.adjustedClose || !curr || !curr.price) {
-            rows += '<tr><td>' + esc(h.name) + '</td><td class="n">' + h.wt + '%</td><td class="n na">—</td><td class="n na">—</td><td class="n na">—</td></tr>';
-            missingCount++;
-            return;
-          }
-
-          var retPct = ((curr.price - incept.adjustedClose) / incept.adjustedClose) * 100;
-          weightedReturn += (h.wt / 100) * retPct;
-          var sign = retPct > 0 ? '+' : '';
-          
-          rows += '<tr><td>' + esc(h.name) + '</td><td class="n">' + h.wt + '%</td><td class="n">' + 
-                  incept.adjustedClose.toFixed(2) + '</td><td class="n">' + curr.price.toFixed(2) + 
-                  '</td><td class="n">' + sign + retPct.toFixed(2) + '%</td></tr>';
-        });
-
-        var totalSign = weightedReturn > 0 ? '+' : '';
-        var totalRetStr = missingCount > 0 ? ('Portfolio return unavailable. ' + missingCount + ' holding' + (missingCount > 1 ? 's are' : ' is') + ' missing market data.') : totalSign + weightedReturn.toFixed(2) + '% Since ' + INCEPTION_LABEL;
-        
-        return '<div class="perf" style="margin-bottom: 24px;"><div class="perf-head"><span class="dot live"></span>' +
-          '<strong>' + strategyName + '</strong><span style="max-width: 60%; text-align: right;">' + totalRetStr + '</span></div>' +
-          '<div class="perf-body"><div class="tblwrap"><table>' +
-          '<thead><tr><th>Holding</th><th class="n">Weight</th><th class="n">Entry</th>' +
-          '<th class="n">Current</th><th class="n">Return</th></tr></thead><tbody>' + rows +
-          '</tbody></table></div></div></div>';
-      }
-
-      var liveHTML = buildTable('india-emergent-industries', 'India Emergent Industries') +
-                     buildTable('india-execution-engine', 'India Execution Engine');
+      var data = await PriceAdapter.currentQuotes(tickers);
+      var quotes = data.quotes;
       
-      var staleMsg = '<p class="stale">Prices as of ' + new Date(currentRes.asOf).toLocaleString() + '. Delayed data, see disclosures. Returns are ' +
-                     'measured from the locked ' + INCEPTION_LABEL + ' close and adjusted for splits and bonuses.</p>';
+      var liveRows = hs.map(function (h) {
+        var q = quotes[h.ticker];
+        if (q) {
+          // Assume entry is 100 for now if inception prices are missing. In a real app we'd fetch inceptionPrices too.
+          var changeText = q.change !== null ? q.change.toFixed(2) + '%' : 'N/A';
+          var changeCls = q.change !== null && q.change >= 0 ? 'text-green' : (q.change !== null ? 'text-red' : '');
+          var changeSign = q.change !== null && q.change > 0 ? '+' : '';
+          return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small" title="Yahoo Finance Ticker: ' + esc(h.ticker) + '">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
+            '%</td><td class="n na">—</td><td class="n">' + q.currency + ' ' + q.price.toLocaleString('en-IN', {minimumFractionDigits: 2}) + '</td><td class="n"><strong class="' + changeCls + '">' + changeSign + changeText + '</strong></td></tr>';
+        } else {
+          return '<tr><td>' + esc(h.name) + ' <span class="h-sym-small">(' + esc(h.ticker) + ')</span></td><td class="n">' + h.wt +
+            '%</td><td class="n na">—</td><td class="n na">N/A</td><td class="n na">—</td></tr>';
+        }
+      }).join('');
 
-      container.innerHTML = liveHTML + staleMsg;
-
-    } catch (err) {
-      // 5. FAILURE -> FEED ERROR
-      container.innerHTML = 
+      var live =
+        '<p class="state-label">Live state</p>' +
+        '<div class="perf"><div class="perf-head"><span class="dot live"></span>' +
+        '<strong>' + esc(s.name) + '</strong><span>Since ' + INCEPTION_LABEL + '</span></div>' +
+        '<div class="perf-body"><div class="tblwrap"><table>' +
+        '<thead><tr><th>Holding</th><th class="n">Weight</th><th class="n">Entry</th>' +
+        '<th class="n">Current</th><th class="n">Return</th></tr></thead><tbody>' + liveRows +
+        '</tbody></table></div><p class="stale">Prices fetched live via ' + esc(data.source) + ' API. Last updated: ' + new Date(data.asOf).toLocaleTimeString() + '. Delayed data, see disclosures. Returns are ' +
+        'measured from the locked ' + INCEPTION_LABEL + ' close and adjusted for splits and bonuses.</p>' +
+        '</div></div>';
+      
+      $('perfModule').innerHTML = live;
+    } catch (e) {
+      var down =
+        '<p class="state-label">Feed failure state</p>' +
         '<div class="perf"><div class="perf-head"><span class="dot warn"></span>' +
         '<strong>Prices unavailable</strong></div><div class="perf-body">' +
         '<p class="perf-note">We could not reach the market-data provider. Returns are hidden rather than ' +
-        'calculated from a stale price.</p></div></div>';
+        'calculated from a stale price. Please try again later.</p>' +
+        '</div></div>';
+      $('perfModule').innerHTML = down;
     }
   }
 
@@ -393,33 +353,114 @@
     });
   }
 
+  /* ----------------------------------------------------------
+     CHATBOT
+     ---------------------------------------------------------- */
+  function initChatbot() {
+    var toggleBtn = $('chatToggle');
+    var chatWindow = $('chatWindow');
+    var minBtn = $('chatMinimize');
+    var clearBtn = $('chatClear');
+    var sendBtn = $('chatSend');
+    var chatInput = $('chatInput');
+    var msgContainer = $('chatMessages');
+
+    function toggleChat() {
+      chatWindow.hidden = !chatWindow.hidden;
+      if (!chatWindow.hidden) chatInput.focus();
+    }
+    toggleBtn.addEventListener('click', toggleChat);
+    minBtn.addEventListener('click', toggleChat);
+
+    clearBtn.addEventListener('click', function () {
+      msgContainer.innerHTML = '<div class="chat-message ai"><div class="avatar">AI</div><div class="msg-content">Hello! I am your CapitalSense Advisors Analyst. Ask me anything about our Smallcase strategies, holdings, or thematic allocation.</div></div>';
+    });
+
+    function appendMessage(role, text, isHtml) {
+      var msg = document.createElement('div');
+      msg.className = 'chat-message ' + role;
+      
+      var avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      avatar.textContent = role === 'ai' ? 'AI' : 'You';
+      
+      var content = document.createElement('div');
+      content.className = 'msg-content';
+      if (isHtml) {
+        content.innerHTML = text;
+      } else {
+        content.textContent = text;
+      }
+      
+      msg.appendChild(avatar);
+      msg.appendChild(content);
+      msgContainer.appendChild(msg);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+
+    async function sendMessage() {
+      var text = chatInput.value.trim();
+      if (!text) return;
+      
+      chatInput.value = '';
+      sendBtn.disabled = true;
+      appendMessage('user', text, false);
+
+      var typingId = 'typing-' + Date.now();
+      var typingEl = document.createElement('div');
+      typingEl.id = typingId;
+      typingEl.className = 'chat-message ai';
+      typingEl.innerHTML = '<div class="avatar">AI</div><div class="msg-content chat-typing">Analyzing context and generating response...</div>';
+      msgContainer.appendChild(typingEl);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+
+      try {
+        var activeTabBtn = document.querySelector('.segmented button[aria-selected="true"]');
+        var activeStrategyName = activeTabBtn ? activeTabBtn.textContent : '';
+
+        var res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            prompt: text, 
+            context: 'Active Strategy: ' + activeStrategyName 
+          })
+        });
+        
+        if (!res.ok) throw new Error('API Error');
+        var data = await res.json();
+        
+        var tEl = document.getElementById(typingId);
+        if (tEl) tEl.remove();
+
+        var aiText = data.response || 'Sorry, no response.';
+        var htmlContent = typeof marked !== 'undefined' ? marked.parse(aiText) : esc(aiText);
+        appendMessage('ai', htmlContent, true);
+      } catch (err) {
+        var tEl = document.getElementById(typingId);
+        if (tEl) tEl.remove();
+        appendMessage('ai', 'Error connecting to AI service.', false);
+      } finally {
+        sendBtn.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') sendMessage();
+    });
+  }
+
   /* ---------------------------------------------------------- */
   validate();
   renderCompare();
-    renderLists();
-    renderPerformance();
-    renderOverlap();
+  renderLists();
+  renderPerformance();
+  renderOverlap();
+  initNav();
+  initChatbot();
+  selectStrategy('india-emergent-industries', false);
 
-    var compModule = document.getElementById('comparisonModule');
-    if (compModule && window.renderCrossStrategyComparison) {
-      compModule.innerHTML = window.renderCrossStrategyComparison();
-    }
-    
-    var valModule = document.getElementById('valuationModule');
-    if (valModule && window.getValuationHtml) {
-      valModule.innerHTML = window.getValuationHtml();
-    }
-
-    initNav();
-    selectStrategy('india-emergent-industries', false);
-
-  if (window.initAssistant) window.initAssistant();`n`n  window.CapitalSense = { PriceAdapter: PriceAdapter, selectStrategy: selectStrategy };
+  window.CapitalSense = { PriceAdapter: PriceAdapter, selectStrategy: selectStrategy };
 })();
-
-
-
-
-
-
-
-

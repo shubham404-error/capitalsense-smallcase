@@ -49,7 +49,7 @@ const PRICES = {
   'BEL.NS': null,
   'HAL.NS': null,
   'ASTRAMICRO.NS': null,
-  'ENRIN.NS': null,
+  'SIEMENSENERGY.NS': null,
   'KPIL.NS': null,
   'GVT&D.NS': null,
   'KEC.NS': null,
