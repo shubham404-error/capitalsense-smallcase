@@ -1,0 +1,35 @@
+# ============================================================
+#  CapitalSense Advisors — Netlify configuration
+# ============================================================
+
+[build]
+  publish  = "public"
+  functions = "netlify/functions"
+  command  = "echo 'Static site — no build step'"
+
+[functions]
+  node_bundler = "esbuild"
+
+# The front end calls /api/*. Netlify Functions live under
+# /.netlify/functions/*. This rewrite keeps the front-end URLs
+# identical to the old Express routes, so nothing in app.js changes.
+[[redirects]]
+  from   = "/api/prices"
+  to     = "/.netlify/functions/prices"
+  status = 200
+
+[[redirects]]
+  from   = "/api/inception"
+  to     = "/.netlify/functions/inception"
+  status = 200
+
+[[redirects]]
+  from   = "/api/chat"
+  to     = "/.netlify/functions/chat"
+  status = 200
+
+# Single page — send unknown paths to index rather than a 404.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
